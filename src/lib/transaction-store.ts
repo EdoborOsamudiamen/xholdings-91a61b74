@@ -18,7 +18,6 @@ export type Transaction = {
 
 export function useTransactionStore() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -60,7 +59,6 @@ export function useTransactionStore() {
         screenshotUrl: tx.screenshot_url ?? null
       }));
       setTransactions(formatted);
-      setHasFetched(true);
     }
   };
 
@@ -140,5 +138,5 @@ export function useTransactionStore() {
     }
   };
 
-  return { transactions, hasFetched, addTransaction, updateStatus };
+  return { transactions, addTransaction, updateStatus };
 }
