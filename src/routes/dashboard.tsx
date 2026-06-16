@@ -152,7 +152,7 @@ function Dashboard() {
         <div className="flex items-center justify-between mb-12">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-8 h-8 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-sm">X</div>
-            <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+            <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </Link>
           <NotificationBell transactions={userTransactions} align="left" />
         </div>
@@ -178,7 +178,7 @@ function Dashboard() {
       <header className="sticky top-0 flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1c]/95 backdrop-blur-md border-b border-white/5 z-40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-sm">X</div>
-          <span className="font-light text-lg tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+          <span className="font-light text-lg tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell transactions={userTransactions} />
@@ -1505,7 +1505,7 @@ function RewardsTab({ profile }: { profile?: any }) {
   const [copied, setCopied] = useState(false);
 
   const referralCode = profile?.referral_code || 'N/A';
-  const referralLink = `https://xholdings.com/join?ref=${referralCode}`;
+  const referralLink = `https://thespaceholdings.com/join?ref=${referralCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -1519,7 +1519,7 @@ function RewardsTab({ profile }: { profile?: any }) {
         <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-64 bg-[#b088f5]/20 rounded-full blur-[80px] pointer-events-none" />
         <Gift className="w-12 h-12 text-[#b088f5] mx-auto mb-4 relative z-10" />
         <h1 className="text-4xl text-white font-['Outfit'] font-light mb-2 relative z-10">Refer & Earn</h1>
-        <p className="text-gray-400 text-[13px] max-w-md mx-auto relative z-10 px-4">Invite friends to join XHoldings and earn 5% of their initial deposit instantly to your withdrawable balance.</p>
+        <p className="text-gray-400 text-[13px] max-w-md mx-auto relative z-10 px-4">Invite friends to join TheSpaceHoldings and earn 5% of their initial deposit instantly to your withdrawable balance.</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">

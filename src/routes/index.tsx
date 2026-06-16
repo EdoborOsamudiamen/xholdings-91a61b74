@@ -22,7 +22,7 @@ function Landing() {
             <div className="w-8 h-8 md:w-10 md:h-10 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-base md:text-lg">
               X
             </div>
-            <span className="font-light text-xl md:text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+            <span className="font-light text-xl md:text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </div>
           <div className="hidden lg:flex items-center gap-10 text-[13px] font-medium text-gray-300 tracking-wider uppercase">
             <a href="#markets" className="hover:text-[#e8c96a] transition-colors">Markets</a>
@@ -203,7 +203,7 @@ function Landing() {
         <div className="max-w-[1400px] mx-auto px-6 md:px-12">
           <div className="grid lg:grid-cols-12 gap-16">
             <div className="lg:col-span-5">
-              <h2 className="text-[12px] text-[#c9a84c] uppercase tracking-[0.2em] mb-4 font-bold">The XHoldings Advantage</h2>
+              <h2 className="text-[12px] text-[#c9a84c] uppercase tracking-[0.2em] mb-4 font-bold">The TheSpaceHoldings Advantage</h2>
               <h3 className="text-4xl font-light text-white font-['Outfit'] leading-tight mb-8">Why Investors <br/>Choose Us</h3>
               <p className="text-[15px] text-gray-400 font-light leading-relaxed mb-8">
                 We bridge the gap between traditional high finance and the modern digital economy. Our platform is built for serious investors who demand the highest quality assets with the flexibility of modern technology.
@@ -272,7 +272,7 @@ function Landing() {
           </div>
           
           <div className="border-t border-white/5 pt-10 mt-10">
-            <p className="text-[12px] text-gray-500 font-light">© {new Date().getFullYear()} XHoldings. All rights reserved.</p>
+            <p className="text-[12px] text-gray-500 font-light">© {new Date().getFullYear()} TheSpaceHoldings. All rights reserved.</p>
           </div>
         </div>
       </footer>

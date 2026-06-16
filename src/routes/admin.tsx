@@ -1119,7 +1119,7 @@ function TransactionCard({ tx }: { tx: any }) {
     if (tx.type === 'deposit') {
       updateStatus(tx.id, 'approved', tx.amount);
       await sendPushToUser(
-        '✅ Deposit Approved — XHoldings',
+        '✅ Deposit Approved — TheSpaceHoldings',
         `Your deposit of ${amt} has been credited to your account.`,
         'deposit-approved'
       );
@@ -1129,7 +1129,7 @@ function TransactionCard({ tx }: { tx: any }) {
       }
       updateStatus(tx.id, 'approved');
       await sendPushToUser(
-        '💸 Withdrawal Sent — XHoldings',
+        '💸 Withdrawal Sent — TheSpaceHoldings',
         `Your withdrawal of ${amt} has been processed and sent.`,
         'withdrawal-approved'
       );
@@ -1141,7 +1141,7 @@ function TransactionCard({ tx }: { tx: any }) {
     const amt = `$${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${tx.asset || ''}`;
     updateStatus(tx.id, 'rejected');
     await sendPushToUser(
-      `❌ ${tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'} Rejected — XHoldings`,
+      `❌ ${tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'} Rejected — TheSpaceHoldings`,
       `Your ${tx.type} of ${amt} was not approved. Please contact support.`,
       `${tx.type}-rejected`
     );

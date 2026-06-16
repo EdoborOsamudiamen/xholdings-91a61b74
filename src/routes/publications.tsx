@@ -76,7 +76,7 @@ function Publications() {
             <div className="w-10 h-10 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-lg">
               X
             </div>
-            <span className="font-light text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+            <span className="font-light text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </Link>
           <div className="hidden lg:flex items-center gap-10 text-[13px] font-medium text-gray-300 tracking-wider uppercase">
             <Link to="/publications" className="text-[#e8c96a] transition-colors">Publications</Link>
@@ -148,7 +148,7 @@ function Publications() {
                   For decades, the biggest investment gains were made exclusively by venture capitalists and Wall Street insiders long before a company ever hit the stock market. When a company finally has an IPO (Initial Public Offering), the average retail investor is often buying at the highest possible price.
                 </p>
                 <p>
-                  At XHoldings, we believe everyday investors deserve access to these same early-stage opportunities. In this guide, we break down exactly how Pre-IPO investing works, the risks involved, and how our platform secures shares in some of the world's fastest-growing private companies so you can benefit from their massive growth before they become household names.
+                  At TheSpaceHoldings, we believe everyday investors deserve access to these same early-stage opportunities. In this guide, we break down exactly how Pre-IPO investing works, the risks involved, and how our platform secures shares in some of the world's fastest-growing private companies so you can benefit from their massive growth before they become household names.
                 </p>
               </div>
               <Link to="/article/$articleId" params={{ articleId: 'pre-ipo-advantage' }}>
@@ -213,13 +213,13 @@ function Publications() {
             <div className="col-span-2 lg:col-span-2">
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-8 h-8 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-sm">X</div>
-                <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+                <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
               </div>
               <div className="space-y-2 text-[13px] text-gray-500 font-light">
                 <p>Global Headquarters</p>
                 <p>One World Trade Center</p>
                 <p>New York, NY 10007</p>
-                <p className="mt-4 pt-4 border-t border-white/5 inline-block">support@xholdings.io</p>
+                <p className="mt-4 pt-4 border-t border-white/5 inline-block">support@thespaceholdings.io</p>
               </div>
             </div>
             <div>
@@ -255,10 +255,10 @@ function Publications() {
           
           <div className="border-t border-white/5 pt-10 text-[11px] text-gray-600 leading-loose text-justify space-y-4 font-light">
             <p>
-              XHoldings makes investing simple, but all investing involves risk. The value of your investments can go down as well as up, and you may get back less than you originally invested. Past performance is not a reliable indicator of future results. We recommend talking to a financial advisor if you are unsure if an investment is right for you.
+              TheSpaceHoldings makes investing simple, but all investing involves risk. The value of your investments can go down as well as up, and you may get back less than you originally invested. Past performance is not a reliable indicator of future results. We recommend talking to a financial advisor if you are unsure if an investment is right for you.
             </p>
             <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-6 border-t border-white/5 text-[12px]">
-              <p>© {new Date().getFullYear()} XHoldings Inc. All rights reserved.</p>
+              <p>© {new Date().getFullYear()} TheSpaceHoldings Inc. All rights reserved.</p>
               <div className="flex gap-6 mt-4 md:mt-0 font-medium">
                 <Link to="/" className="hover:text-[#c9a84c] transition-colors">Terms of Service</Link>
                 <Link to="/" className="hover:text-[#c9a84c] transition-colors">Privacy Policy</Link>

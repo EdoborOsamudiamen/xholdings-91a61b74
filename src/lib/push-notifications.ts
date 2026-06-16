@@ -1,5 +1,5 @@
 /**
- * XHoldings Push Notification Service
+ * TheSpaceHoldings Push Notification Service
  * Uses the Web Notifications API – works as a native notification on:
  *  - Windows (Chrome/Edge/Firefox)
  *  - Android (Chrome)
@@ -53,11 +53,11 @@ export function sendPushNotification(payload: PushNotificationPayload): void {
   }
 }
 
-/** Convenience helpers for XHoldings-specific events */
+/** Convenience helpers for TheSpaceHoldings-specific events */
 
 export function notifyDepositApproved(amount: string, asset: string) {
   sendPushNotification({
-    title: '✅ Deposit Approved — XHoldings',
+    title: '✅ Deposit Approved — TheSpaceHoldings',
     body: `Your deposit of ${amount} ${asset} has been credited to your account.`,
     tag: 'deposit-approved',
   });
@@ -65,7 +65,7 @@ export function notifyDepositApproved(amount: string, asset: string) {
 
 export function notifyDepositRejected(amount: string, asset: string) {
   sendPushNotification({
-    title: '❌ Deposit Rejected — XHoldings',
+    title: '❌ Deposit Rejected — TheSpaceHoldings',
     body: `Your deposit of ${amount} ${asset} was not approved. Contact support for help.`,
     tag: 'deposit-rejected',
   });
@@ -73,7 +73,7 @@ export function notifyDepositRejected(amount: string, asset: string) {
 
 export function notifyWithdrawalApproved(amount: string, asset: string) {
   sendPushNotification({
-    title: '💸 Withdrawal Sent — XHoldings',
+    title: '💸 Withdrawal Sent — TheSpaceHoldings',
     body: `Your withdrawal of ${amount} ${asset} has been processed and sent.`,
     tag: 'withdrawal-approved',
   });
@@ -81,7 +81,7 @@ export function notifyWithdrawalApproved(amount: string, asset: string) {
 
 export function notifyWithdrawalRejected(amount: string, asset: string) {
   sendPushNotification({
-    title: '❌ Withdrawal Rejected — XHoldings',
+    title: '❌ Withdrawal Rejected — TheSpaceHoldings',
     body: `Your withdrawal of ${amount} ${asset} was rejected. Contact support.`,
     tag: 'withdrawal-rejected',
   });
@@ -89,7 +89,7 @@ export function notifyWithdrawalRejected(amount: string, asset: string) {
 
 export function notifyInvestmentROI(amount: string) {
   sendPushNotification({
-    title: '📈 ROI Credited — XHoldings',
+    title: '📈 ROI Credited — TheSpaceHoldings',
     body: `Daily return of $${amount} has been added to your balance.`,
     tag: 'roi-credit',
   });

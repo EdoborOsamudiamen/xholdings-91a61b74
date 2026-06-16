@@ -64,7 +64,7 @@ function Login() {
             <div className="w-10 h-10 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-lg">
               X
             </div>
-            <span className="font-light text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">XHoldings</span>
+            <span className="font-light text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </div>
           <h2 className="text-3xl font-light text-white font-['Outfit'] leading-snug">
             Welcome <br/> Back
@@ -73,7 +73,7 @@ function Login() {
 
         <div className="relative z-10 text-[11px] text-gray-500 uppercase tracking-widest leading-loose">
           <p>Log in to securely access <br/> your investment portfolio.</p>
-          <p className="mt-4">© {new Date().getFullYear()} XHoldings Inc.</p>
+          <p className="mt-4">© {new Date().getFullYear()} TheSpaceHoldings Inc.</p>
         </div>
       </div>
 
