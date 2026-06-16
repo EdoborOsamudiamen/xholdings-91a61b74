@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import logo from "../assets/logo.png";
 import { 
   ArrowUpRight, ArrowDownLeft, Wallet, TrendingUp, Gift, User, Bell, Rocket, 
   Clock, CheckCircle2, Home, Copy, Shield, Smartphone, Monitor, ChevronRight,
@@ -151,7 +152,7 @@ function Dashboard() {
       <aside className="hidden md:flex flex-col w-64 fixed top-0 left-0 h-screen bg-[#0a0f1c] border-r border-white/5 p-6 z-50">
         <div className="flex items-center justify-between mb-12">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-sm">X</div>
+            <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain" />
             <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </Link>
           <NotificationBell transactions={userTransactions} align="left" />
@@ -177,7 +178,7 @@ function Dashboard() {
       {/* Top Header Mobile */}
       <header className="sticky top-0 flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1c]/95 backdrop-blur-md border-b border-white/5 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-sm">X</div>
+          <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain" />
           <span className="font-light text-lg tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
         </div>
         <div className="flex items-center gap-3">
