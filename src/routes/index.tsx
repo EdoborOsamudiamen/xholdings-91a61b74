@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
+import logo from "../assets/logo.png";
 import { ArrowRight, ChevronRight, BarChart3, Shield, BookOpen, Lock, Wallet, Rocket, Coins, TrendingUp, Menu, X } from "lucide-react";
 
 const LOGIN = "/login";
@@ -19,9 +20,7 @@ function Landing() {
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#070b14]/90 backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 h-20 md:h-24 flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-4 cursor-pointer">
-            <div className="w-8 h-8 md:w-10 md:h-10 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-base md:text-lg">
-              X
-            </div>
+            <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
             <span className="font-light text-xl md:text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
           </div>
           <div className="hidden lg:flex items-center gap-10 text-[13px] font-medium text-gray-300 tracking-wider uppercase">
@@ -253,9 +252,7 @@ function Landing() {
       <footer className="pt-20 pb-10 bg-[#0a0f1c]">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12 text-center">
           <div className="flex flex-col items-center mb-12">
-            <div className="w-12 h-12 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-xl mb-6">
-              X
-            </div>
+            <img src={logo} alt="TheSpaceHoldings" className="w-12 h-12 object-contain mb-6" />
             <h2 className="text-3xl font-light text-white font-['Outfit'] mb-8 text-center">Ready to grow your portfolio?</h2>
             <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-sm mx-auto sm:max-w-none">
               <Link to={REGISTER} className="w-full sm:w-auto">
