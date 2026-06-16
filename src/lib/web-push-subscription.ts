@@ -1,5 +1,5 @@
 /**
- * XHoldings Web Push Subscription Service
+ * TheSpaceHoldings Web Push Subscription Service
  * 
  * Handles:
  * 1. Registering the Service Worker
