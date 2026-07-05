@@ -4,7 +4,7 @@ import { B as Button } from "./button-BXrfXN_b.mjs";
 import { s as supabase } from "./supabase-BOMigAZ6.mjs";
 import { l as logo } from "./logo-qUqMBaFB.mjs";
 import { A as AlertDialog, a as AlertDialogContent, b as AlertDialogHeader, c as AlertDialogTitle, d as AlertDialogDescription, e as AlertDialogFooter, f as AlertDialogAction } from "./alert-dialog-Xw497zxQ.mjs";
-import { S as ShieldCheck, A as ArrowLeft, C as CircleCheck, a as Award, b as CircleAlert, E as EyeOff, c as Eye, d as Sparkles } from "../_libs/lucide-react.mjs";
+import { S as ShieldCheck, A as ArrowLeft, a as CircleCheck, c as Award, C as CircleAlert, E as EyeOff, b as Eye, d as Sparkles } from "../_libs/lucide-react.mjs";
 import "../_libs/tanstack__router-core.mjs";
 import "../_libs/tanstack__history.mjs";
 import "../_libs/cookie-es.mjs";

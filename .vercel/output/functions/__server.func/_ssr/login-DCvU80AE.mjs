@@ -3,7 +3,7 @@ import { d as useNavigate, L as Link } from "../_libs/tanstack__react-router.mjs
 import { B as Button } from "./button-BXrfXN_b.mjs";
 import { s as supabase } from "./supabase-BOMigAZ6.mjs";
 import { l as logo } from "./logo-qUqMBaFB.mjs";
-import { A as ArrowLeft, S as ShieldCheck, L as Lock, B as Building2, b as CircleAlert, E as EyeOff, c as Eye } from "../_libs/lucide-react.mjs";
+import { A as ArrowLeft, S as ShieldCheck, L as Lock, B as Building2, C as CircleAlert, E as EyeOff, b as Eye } from "../_libs/lucide-react.mjs";
 import "../_libs/tanstack__router-core.mjs";
 import "../_libs/tanstack__history.mjs";
 import "../_libs/cookie-es.mjs";
