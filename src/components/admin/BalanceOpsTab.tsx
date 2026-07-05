@@ -17,7 +17,7 @@ type Tx = {
   timestamp: number;
 };
 
-const CATEGORIES = ["PROFIT", "BONUS", "ADJUSTMENT", "MANUAL DEPOSIT"] as const;
+const CATEGORIES = ["PROFIT", "BONUS", "ADJUSTMENT", "DEPOSIT"] as const;
 type Category = (typeof CATEGORIES)[number];
 
 const ADMIN_TAG = "[ADMIN]";
@@ -100,7 +100,7 @@ export default function BalanceOpsTab() {
   }, [users, query]);
 
   const adminOps = useMemo(
-    () => history.filter((t) => CATEGORIES.includes(t.asset as Category) && t.txid?.startsWith(ADMIN_TAG)),
+    () => history.filter((t) => (CATEGORIES.includes(t.asset as Category) || t.asset === "MANUAL DEPOSIT") && t.txid?.startsWith(ADMIN_TAG)),
     [history],
   );
 

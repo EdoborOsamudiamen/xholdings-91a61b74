@@ -841,7 +841,7 @@ function HomeTab({ setActiveTab, profile }: { setActiveTab: (tab: string) => voi
                   const isDeposit = tx.type === 'deposit';
                   const isProfit = tx.asset === 'PROFIT';
                   const isBonus = tx.asset === 'BONUS';
-                  const label = tx.asset === 'PROFIT' ? 'Profit' : tx.asset === 'BONUS' ? 'Bonus' : tx.asset === 'ADJUSTMENT' ? 'Adjustment' : tx.asset === 'MANUAL DEPOSIT' ? 'Deposit' : tx.type;
+                  const label = tx.asset === 'PROFIT' ? 'Profit' : tx.asset === 'BONUS' ? 'Bonus' : tx.asset === 'ADJUSTMENT' ? 'Adjustment' : (tx.asset === 'MANUAL DEPOSIT' || tx.asset === 'DEPOSIT') ? 'Deposit' : tx.type;
 
                   return (
                     <div key={tx.id} className="py-3.5 flex items-center justify-between">
@@ -1636,7 +1636,7 @@ function WalletTab({ profile, settings }: { profile?: any, settings?: any }) {
                             {tx.status}
                           </span>
                           <span className="text-[12px] text-gray-400 uppercase tracking-widest">
-                            {tx.asset === 'PROFIT' ? 'Profit' : tx.asset === 'BONUS' ? 'Bonus' : tx.asset === 'ADJUSTMENT' ? 'Adjustment' : tx.asset === 'MANUAL DEPOSIT' ? 'Deposit' : tx.type}
+                            {tx.asset === 'PROFIT' ? 'Profit' : tx.asset === 'BONUS' ? 'Bonus' : tx.asset === 'ADJUSTMENT' ? 'Adjustment' : (tx.asset === 'MANUAL DEPOSIT' || tx.asset === 'DEPOSIT') ? 'Deposit' : tx.type}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
