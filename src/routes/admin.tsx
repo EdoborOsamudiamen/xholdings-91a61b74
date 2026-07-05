@@ -9,6 +9,7 @@ import {
 import { useCryptoStore } from "../lib/crypto-store";
 import { useTransactionStore } from "../lib/transaction-store";
 import BalanceOpsTab from "../components/admin/BalanceOpsTab";
+import { sendNotificationEmail } from "../lib/send-email";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -704,6 +705,25 @@ function TransactionCard({ tx }: { tx: any }) {
     }
   };
 
+  // Helper: fire a background email notification to the user
+  const sendEmailToUser = async (type: string, amount: number, extraData: any = {}) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('email', tx.userEmail)
+        .single();
+      
+      await sendNotificationEmail(tx.userEmail, type, {
+        amount,
+        full_name: profile?.name || '',
+        ...extraData
+      });
+    } catch (err) {
+      console.error('[Admin Email Notification]', err);
+    }
+  };
+
   const handleApprove = async () => {
     const amt = `$${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${tx.asset || ''}`;
     if (tx.type === 'deposit') {
@@ -713,6 +733,7 @@ function TransactionCard({ tx }: { tx: any }) {
         `Your deposit of ${amt} has been credited to your account.`,
         'deposit-approved'
       );
+      sendEmailToUser('deposit-approved', tx.amount);
     } else {
       if (sentTxid) {
         await supabase.from('transactions').update({ txid: sentTxid }).eq('id', tx.id);
@@ -723,6 +744,7 @@ function TransactionCard({ tx }: { tx: any }) {
         `Your withdrawal of ${amt} has been processed and sent.`,
         'withdrawal-approved'
       );
+      sendEmailToUser('withdrawal-approved', tx.amount);
     }
     setIsApproveOpen(false);
   };
@@ -735,6 +757,7 @@ function TransactionCard({ tx }: { tx: any }) {
       `Your ${tx.type} of ${amt} was not approved. Please contact support.`,
       `${tx.type}-rejected`
     );
+    sendEmailToUser(`${tx.type}-rejected`, tx.amount);
   };
 
   const handleCopy = (text: string) => {

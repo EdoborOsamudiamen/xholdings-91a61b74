@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { sendNotificationEmail } from "@/lib/send-email";
 import { toast } from "sonner";
 import { Search, Users, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
@@ -138,6 +139,12 @@ export default function BalanceOpsTab() {
       return;
     }
     toast.success(`${direction === "credit" ? "Credited" : "Debited"} $${amt.toFixed(2)} ${category}`);
+    sendNotificationEmail(selected.email, 'balance-credited', {
+      amount: amt,
+      category: category,
+      direction: direction,
+      full_name: selected.name
+    });
     setAmount("");
     setNote("");
   };
@@ -169,6 +176,12 @@ export default function BalanceOpsTab() {
     });
     if (rpcErr) return toast.error(rpcErr.message);
     toast.success("Reversed");
+    sendNotificationEmail(tx.user_email, 'balance-credited', {
+      amount: tx.amount,
+      category: `${tx.asset} Reversal`,
+      direction: counterType === 'deposit' ? 'credit' : 'debit',
+      full_name: selected.name
+    });
   };
 
   return (
