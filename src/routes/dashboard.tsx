@@ -160,11 +160,11 @@ function Dashboard() {
     <div className="min-h-screen bg-[#04070d] text-[#f0f4ff] font-['Inter'] selection:bg-[#c9a84c]/30 flex flex-col md:flex-row">
       
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#0a0f1c] border-r border-white/5 min-h-screen p-6 sticky top-0 h-screen">
+      <aside className="hidden md:flex flex-col w-64 bg-[#0a0f1c] border-r border-white/5 min-h-screen p-6 sticky top-0 h-screen z-30">
         <div className="flex flex-col gap-4 mb-8">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain" />
-            <span className="font-light text-xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
+            <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain shrink-0" />
+            <span className="font-light text-base tracking-[0.08em] text-white font-['Outfit'] uppercase whitespace-nowrap shrink-0">TheSpaceHoldings</span>
           </Link>
           <div className="flex items-center justify-between px-1 py-2 border-t border-b border-white/5">
             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Notifications</span>
@@ -192,8 +192,8 @@ function Dashboard() {
       {/* Top Header Mobile */}
       <header className="sticky top-0 flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1c]/95 backdrop-blur-md border-b border-white/5 z-40">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain" />
-          <span className="font-light text-lg tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
+          <img src={logo} alt="TheSpaceHoldings" className="w-8 h-8 object-contain shrink-0" />
+          <span className="font-light text-base tracking-[0.08em] text-white font-['Outfit'] uppercase whitespace-nowrap shrink-0">TheSpaceHoldings</span>
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell transactions={userTransactions} />
