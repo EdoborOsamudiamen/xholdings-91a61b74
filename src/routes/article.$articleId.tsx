@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Calendar, Linkedin, Twitter } from "lucide-react";
 import { Button } from "../components/ui/button";
+import logo from "../assets/logo.png";
 
 export const Route = createFileRoute("/article/$articleId")({
   component: ArticlePage,
@@ -239,18 +240,24 @@ function ArticlePage() {
 
   return (
     <div className="min-h-screen bg-[#070b14] text-[#f0f4ff] font-['Inter'] selection:bg-[#c9a84c]/30">
-      {/* Ultra-Minimal Institutional Navbar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#070b14]/90 backdrop-blur-md">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 h-24 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-4 cursor-pointer">
-            <div className="w-10 h-10 border border-[#c9a84c]/50 flex items-center justify-center font-bold text-[#e8c96a] font-['Outfit'] text-lg">
-              X
+      {/* Ultra-Premium Glassmorphic Institutional Navbar */}
+      <nav className="sticky top-0 w-full z-40 border-b border-white/[0.08] bg-[#050811]/85 backdrop-blur-xl transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 h-20 flex items-center justify-between gap-3 lg:gap-6">
+          {/* Logo Brand */}
+          <Link to="/" className="flex items-center gap-3.5 cursor-pointer group shrink-0">
+            <div className="w-9 h-9 rounded bg-gradient-to-br from-[#c9a84c]/20 via-[#c9a84c]/5 to-transparent border border-[#c9a84c]/40 flex items-center justify-center group-hover:border-[#c9a84c] group-hover:shadow-[0_0_15px_rgba(201,168,76,0.25)] transition-all duration-300">
+              <img src={logo} alt="TheSpaceHoldings" className="w-5 h-5 object-contain group-hover:scale-105 transition-transform duration-300" />
             </div>
-            <span className="font-light text-2xl tracking-[0.15em] text-white font-['Outfit'] uppercase">TheSpaceHoldings</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-base md:text-lg tracking-[0.16em] text-white font-['Cinzel'] uppercase group-hover:text-[#f0eedd] transition-colors">TheSpaceHoldings</span>
+              </div>
+              <span className="text-[9px] text-slate-400 tracking-[0.2em] uppercase font-mono group-hover:text-slate-300 transition-colors">Private Markets & Yield</span>
+            </div>
           </Link>
           <div className="flex items-center gap-6">
-            <Link to="/publications" className="text-[13px] font-medium text-gray-400 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back to Publications
+            <Link to="/publications" className="text-[12px] font-semibold text-slate-300 hover:text-[#c9a84c] transition-colors uppercase tracking-[0.12em] px-3.5 py-2 rounded border border-white/5 hover:border-white/10 hover:bg-white/[0.03] flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4 text-[#c9a84c]" /> Back to Research
             </Link>
           </div>
         </div>

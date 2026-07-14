@@ -77,18 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-      { title: "SpaceHoldings" },
-      { name: "description", content: "SpaceHoldings merges broker and admin platforms into a premium private investment experience." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "SpaceHoldings" },
-      { property: "og:description", content: "SpaceHoldings merges broker and admin platforms into a premium private investment experience." },
+      { title: "TheSpaceHoldings | Private Market & Yield Allocation" },
+      { name: "description", content: "TheSpaceHoldings provides qualified allocators and accredited investors direct access to Pre-IPO venture equity, senior secured private credit, and digital asset strategies." },
+      { name: "author", content: "TheSpaceHoldings" },
+      { property: "og:title", content: "TheSpaceHoldings | Private Market & Yield Allocation" },
+      { property: "og:description", content: "Direct access to Pre-IPO venture equity, senior secured private credit, and digital asset strategies." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "SpaceHoldings" },
-      { name: "twitter:description", content: "SpaceHoldings merges broker and admin platforms into a premium private investment experience." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/rlF63efU42f4aLE2cFuMPulRpXX2/social-images/social-1781693053825-IMG_0101.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/rlF63efU42f4aLE2cFuMPulRpXX2/social-images/social-1781693053825-IMG_0101.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:site", content: "@TheSpaceHoldings" },
+      { name: "twitter:title", content: "TheSpaceHoldings | Private Market & Yield Allocation" },
+      { name: "twitter:description", content: "Direct access to Pre-IPO venture equity, senior secured private credit, and digital asset strategies." },
+      { property: "og:image", content: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop" },
+      { name: "twitter:image", content: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000&auto=format&fit=crop" },
     ],
     links: [
       {
@@ -102,7 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap",
       },
       {
         rel: "stylesheet",

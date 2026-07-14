@@ -2,14 +2,16 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { 
-  Users, DollarSign, Wallet, ShieldAlert, CheckCircle, XCircle, 
+  Users, DollarSign, Wallet, ShieldAlert, CheckCircle, XCircle, ShieldCheck,
   Trash2, Ban, Edit, Settings, Activity, Search, Power, Clock,
-  TrendingUp, Plus, ImageIcon, ToggleLeft, ToggleRight, Eye, X as XIcon, Menu, Copy, Sliders
+  TrendingUp, Plus, ImageIcon, ToggleLeft, ToggleRight, Eye, X as XIcon, Menu, Copy, Sliders,
+  Mail
 } from "lucide-react";
 import { useCryptoStore } from "../lib/crypto-store";
 import { useTransactionStore } from "../lib/transaction-store";
 import BalanceOpsTab from "../components/admin/BalanceOpsTab";
-import UserPlansTab from "../components/admin/UserPlansTab";
+import EmailsTab from "../components/admin/EmailsTab";
+import { sendNotificationEmail } from "../lib/send-email";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -109,10 +111,10 @@ function AdminDashboard() {
           <TabButton active={activeTab === 'transactions'} onClick={() => {setActiveTab('transactions'); setIsMobileMenuOpen(false);}} icon={DollarSign} label="Transactions" />
           <TabButton active={activeTab === 'balance_ops'} onClick={() => {setActiveTab('balance_ops'); setIsMobileMenuOpen(false);}} icon={Sliders} label="Balance Ops" />
           <TabButton active={activeTab === 'wallets'} onClick={() => {setActiveTab('wallets'); setIsMobileMenuOpen(false);}} icon={Wallet} label="Platform Wallets" />
-          <TabButton active={activeTab === 'plans'} onClick={() => {setActiveTab('plans'); setIsMobileMenuOpen(false);}} icon={TrendingUp} label="Investment Plans" />
-          <TabButton active={activeTab === 'user_plans'} onClick={() => {setActiveTab('user_plans'); setIsMobileMenuOpen(false);}} icon={Users} label="Manage User Plans" />
           <TabButton active={activeTab === 'copy_trading'} onClick={() => {setActiveTab('copy_trading'); setIsMobileMenuOpen(false);}} icon={Copy} label="Copy Trading" />
+          <TabButton active={activeTab === 'kyc'} onClick={() => {setActiveTab('kyc'); setIsMobileMenuOpen(false);}} icon={ShieldCheck} label="KYC Review" />
           <TabButton active={activeTab === 'security'} onClick={() => {setActiveTab('security'); setIsMobileMenuOpen(false);}} icon={ShieldAlert} label="Security logs" />
+          <TabButton active={activeTab === 'emails'} onClick={() => {setActiveTab('emails'); setIsMobileMenuOpen(false);}} icon={Mail} label="Send Emails" />
         </div>
         <div className="mt-auto border-t border-white/5 pt-6">
           <div className="flex items-center justify-between">
@@ -137,421 +139,11 @@ function AdminDashboard() {
         {activeTab === 'transactions' && <TransactionsTab />}
         {activeTab === 'balance_ops' && <BalanceOpsTab />}
         {activeTab === 'wallets' && <WalletsTab />}
-        {activeTab === 'plans' && <PlansTab />}
-        {activeTab === 'user_plans' && <UserPlansTab />}
         {activeTab === 'copy_trading' && <CopyTradingTab />}
+        {activeTab === 'kyc' && <KYCTab />}
         {activeTab === 'security' && <SecurityTab />}
+        {activeTab === 'emails' && <EmailsTab />}
       </main>
-    </div>
-  );
-}
-
-// ─── Investment Plans Tab ─────────────────────────────────────────────────────
-
-type Plan = {
-  id: string;
-  name: string;
-  daily_roi: number;
-  duration_days: number;
-  min_amount: number;
-  max_amount: number | null;
-  is_active: boolean;
-  image_url: string | null;
-  description: string | null;
-  created_at: string;
-};
-
-const EMPTY_PLAN: Omit<Plan, 'id' | 'created_at'> = {
-  name: '',
-  daily_roi: 1,
-  duration_days: 30,
-  min_amount: 100,
-  max_amount: null,
-  is_active: true,
-  image_url: null,
-  description: '',
-};
-
-function PlansTab() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_PLAN });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const fetchPlans = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('investment_plans')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (data) setPlans(data as Plan[]);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchPlans(); }, []);
-
-  const openAdd = () => {
-    setEditingPlan(null);
-    setForm({ ...EMPTY_PLAN });
-    setImageFile(null);
-    setImagePreview(null);
-    setError('');
-    setIsModalOpen(true);
-  };
-
-  const openEdit = (plan: Plan) => {
-    setEditingPlan(plan);
-    setForm({
-      name: plan.name,
-      daily_roi: plan.daily_roi,
-      duration_days: plan.duration_days,
-      min_amount: plan.min_amount,
-      max_amount: plan.max_amount,
-      is_active: plan.is_active,
-      image_url: plan.image_url,
-      description: plan.description,
-    });
-    setImageFile(null);
-    setImagePreview(plan.image_url);
-    setError('');
-    setIsModalOpen(true);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
-
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const ext = file.name.split('.').pop();
-    const path = `plan-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('plan-images').upload(path, file, { upsert: true });
-    if (error) { setError('Image upload failed: ' + error.message); return null; }
-    const { data } = supabase.storage.from('plan-images').getPublicUrl(path);
-    return data.publicUrl;
-  };
-
-  const handleSave = async () => {
-    if (!form.name.trim()) { setError('Plan name is required.'); return; }
-    if (form.daily_roi <= 0) { setError('Daily ROI must be greater than 0.'); return; }
-    setSaving(true);
-    setError('');
-
-    let imageUrl = form.image_url;
-    if (imageFile) {
-      setUploading(true);
-      imageUrl = await uploadImage(imageFile);
-      setUploading(false);
-      if (!imageUrl) { setSaving(false); return; }
-    }
-
-    const payload = {
-      name: form.name.trim(),
-      daily_roi: Number(form.daily_roi),
-      duration_days: Number(form.duration_days),
-      min_amount: Number(form.min_amount),
-      max_amount: form.max_amount ? Number(form.max_amount) : null,
-      is_active: form.is_active,
-      image_url: imageUrl,
-      description: form.description?.trim() || null,
-    };
-
-    if (editingPlan) {
-      await supabase.from('investment_plans').update(payload).eq('id', editingPlan.id);
-    } else {
-      await supabase.from('investment_plans').insert(payload);
-    }
-
-    setSaving(false);
-    setIsModalOpen(false);
-    fetchPlans();
-  };
-
-  const handleDelete = async (id: string) => {
-    await supabase.from('investment_plans').delete().eq('id', id);
-    fetchPlans();
-  };
-
-  const toggleActive = async (plan: Plan) => {
-    await supabase.from('investment_plans').update({ is_active: !plan.is_active }).eq('id', plan.id);
-    fetchPlans();
-  };
-
-  return (
-    <div className="animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl text-white font-light font-['Outfit']">Investment Plans</h1>
-          <p className="text-[13px] text-gray-500 mt-1">Manage plans users can invest in, set ROI and upload plan images.</p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-6 py-3 bg-[#c9a84c] text-[#070b14] text-[12px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#b89945] transition-colors"
-        >
-          <Plus className="w-4 h-4" /> New Plan
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-16 text-gray-500">Loading plans...</div>
-      ) : plans.length === 0 ? (
-        <div className="text-center py-16 border border-white/5 bg-[#0a0f1c] rounded-sm">
-          <TrendingUp className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-500">No investment plans yet.</p>
-          <button onClick={openAdd} className="mt-4 px-6 py-2 bg-[#c9a84c] text-[#070b14] text-[12px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#b89945]">
-            Create First Plan
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {plans.map(plan => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              onEdit={() => openEdit(plan)}
-              onDelete={() => handleDelete(plan.id)}
-              onToggle={() => toggleActive(plan)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Add / Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-[#0a0f1c] border border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-['Outfit'] text-xl">
-              {editingPlan ? 'Edit Plan' : 'New Investment Plan'}
-            </DialogTitle>
-            <DialogDescription className="text-gray-500 text-[12px]">
-              Fill in the plan details. All fields except image and description are required.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* Image Upload */}
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-2 block">Plan Image</label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 bg-[#070b14] border border-white/10 rounded-sm overflow-hidden flex items-center justify-center shrink-0">
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-7 h-7 text-gray-600" />
-                  )}
-                </div>
-                <label className="flex-1 cursor-pointer">
-                  <div className="border border-dashed border-white/20 hover:border-[#c9a84c]/50 rounded-sm p-3 text-center transition-colors">
-                    <p className="text-[12px] text-gray-400">Click to upload image</p>
-                    <p className="text-[10px] text-gray-600 mt-1">PNG, JPG, WEBP – max 5MB</p>
-                  </div>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            {/* Name */}
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Plan Name *</label>
-              <input
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Gold Tier"
-                className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Description</label>
-              <textarea
-                value={form.description || ''}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Short plan description..."
-                rows={2}
-                className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white resize-none"
-              />
-            </div>
-
-            {/* ROI + Duration */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Daily ROI (%) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={form.daily_roi}
-                  onChange={e => setForm(f => ({ ...f, daily_roi: Number(e.target.value) }))}
-                  className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Duration (Days) *</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.duration_days}
-                  onChange={e => setForm(f => ({ ...f, duration_days: Number(e.target.value) }))}
-                  className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Min + Max */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Min Amount ($) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.min_amount}
-                  onChange={e => setForm(f => ({ ...f, min_amount: Number(e.target.value) }))}
-                  className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Max Amount ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.max_amount ?? ''}
-                  placeholder="No limit"
-                  onChange={e => setForm(f => ({ ...f, max_amount: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Active Toggle */}
-            <div className="flex items-center justify-between p-3 bg-[#070b14] border border-white/10 rounded-sm">
-              <div>
-                <div className="text-[13px] text-white font-medium">Active</div>
-                <div className="text-[11px] text-gray-500">Visible to users on the platform</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
-                className={`transition-colors ${form.is_active ? 'text-[#00d4aa]' : 'text-gray-600'}`}
-              >
-                {form.is_active
-                  ? <ToggleRight className="w-8 h-8" />
-                  : <ToggleLeft className="w-8 h-8" />
-                }
-              </button>
-            </div>
-
-            {error && <p className="text-red-400 text-[12px] bg-red-500/10 border border-red-500/20 p-3 rounded-sm">{error}</p>}
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <button className="px-6 py-2 bg-transparent text-white hover:bg-white/5 rounded-sm text-[12px] uppercase tracking-widest">Cancel</button>
-            </DialogClose>
-            <button
-              onClick={handleSave}
-              disabled={saving || uploading}
-              className="px-6 py-2 bg-[#c9a84c] text-[#070b14] font-bold rounded-sm hover:bg-[#b89945] disabled:opacity-50 transition-colors text-[12px] uppercase tracking-widest"
-            >
-              {uploading ? 'Uploading...' : saving ? 'Saving...' : editingPlan ? 'Update Plan' : 'Create Plan'}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function PlanCard({ plan, onEdit, onDelete, onToggle }: { plan: Plan; onEdit: () => void; onDelete: () => void; onToggle: () => void }) {
-  const totalRoi = (plan.daily_roi * plan.duration_days).toFixed(1);
-
-  return (
-    <div className={`bg-[#0a0f1c] border ${plan.is_active ? 'border-[#c9a84c]/30' : 'border-white/5'} rounded-sm overflow-hidden group relative`}>
-      {/* Image */}
-      <div className="h-36 bg-[#070b14] overflow-hidden relative">
-        {plan.image_url ? (
-          <img src={plan.image_url} alt={plan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <TrendingUp className="w-10 h-10 text-gray-700" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] to-transparent" />
-        {/* Active badge */}
-        <div className={`absolute top-3 right-3 px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-widest ${plan.is_active ? 'bg-[#00d4aa]/20 text-[#00d4aa] border border-[#00d4aa]/30' : 'bg-white/5 text-gray-500 border border-white/10'}`}>
-          {plan.is_active ? 'Active' : 'Inactive'}
-        </div>
-      </div>
-
-      <div className="p-5">
-        <h3 className="text-white font-['Outfit'] font-semibold text-lg leading-none mb-1">{plan.name}</h3>
-        {plan.description && <p className="text-gray-500 text-[12px] mb-4 line-clamp-2">{plan.description}</p>}
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-[#070b14] border border-white/5 p-2.5 rounded-sm text-center">
-            <div className="text-[#c9a84c] font-mono font-bold text-lg">{plan.daily_roi}%</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Daily ROI</div>
-          </div>
-          <div className="bg-[#070b14] border border-white/5 p-2.5 rounded-sm text-center">
-            <div className="text-white font-mono font-bold text-lg">{plan.duration_days}d</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Duration</div>
-          </div>
-          <div className="bg-[#070b14] border border-[#00d4aa]/20 p-2.5 rounded-sm text-center">
-            <div className="text-[#00d4aa] font-mono font-bold text-lg">{totalRoi}%</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Total ROI</div>
-          </div>
-        </div>
-
-        <div className="text-[11px] text-gray-500 mb-4">
-          Min: <span className="text-white">${plan.min_amount.toLocaleString()}</span>
-          {plan.max_amount && <> · Max: <span className="text-white">${plan.max_amount.toLocaleString()}</span></>}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          <button
-            onClick={onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white/5 hover:bg-white/10 text-white rounded-sm text-[11px] uppercase tracking-widest font-bold transition-colors"
-          >
-            <Edit className="w-3.5 h-3.5" /> Edit
-          </button>
-          <button
-            onClick={onToggle}
-            title={plan.is_active ? 'Deactivate' : 'Activate'}
-            className={`p-2 rounded-sm transition-colors ${plan.is_active ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400' : 'bg-[#00d4aa]/10 hover:bg-[#00d4aa]/20 text-[#00d4aa]'}`}
-          >
-            <Power className="w-4 h-4" />
-          </button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button className="p-2 bg-red-900/20 hover:bg-red-900/40 text-red-500 rounded-sm transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-[#0a0f1c] border border-white/10 text-white">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete "{plan.name}"?</AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-400">
-                  This will permanently remove this investment plan. Existing investments won't be affected.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5">Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete} className="bg-red-600 text-white hover:bg-red-700">Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
     </div>
   );
 }
@@ -737,7 +329,7 @@ function UsersTab() {
           return acc + (inv.amount * inv.daily_roi * Math.max(0, daysPassed));
         }, 0);
         
-        const totalBalance = Number(profile.balance || 0) + roiEarned + Number(profile.total_earned_referrals || 0);
+        const totalBalance = Number(profile.balance || 0) + Number(profile.profit || 0) + roiEarned + Number(profile.total_earned_referrals || 0);
         
         return {
           ...profile,
@@ -757,6 +349,13 @@ function UsersTab() {
   const handleEdit = async (id: string, newBalance: number) => {
     if (!isNaN(Number(newBalance))) {
       await supabase.from('profiles').update({ balance: Number(newBalance) }).eq('id', id);
+      fetchUsers();
+    }
+  };
+
+  const handleEditProfit = async (id: string, newProfit: number) => {
+    if (!isNaN(Number(newProfit))) {
+      await supabase.from('profiles').update({ profit: Number(newProfit) }).eq('id', id);
       fetchUsers();
     }
   };
@@ -814,10 +413,13 @@ function UsersTab() {
                     balance={`$${Number(user.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
                     totalBalance={`$${Number(user.totalBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
                     rawBalance={Number(user.balance || 0)}
+                    profit={`$${Number(user.profit || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+                    rawProfit={Number(user.profit || 0)}
                     status={user.status || 'Active'}
                     role={user.role}
                     onMakeAdmin={() => makeAdmin(user.id)}
                     onEdit={(newBalance: number) => handleEdit(user.id, newBalance)}
+                    onEditProfit={(newProfit: number) => handleEditProfit(user.id, newProfit)}
                     onBan={() => handleBan(user.id, user.status || 'Active')}
                     onDelete={() => handleDelete(user.id)}
                   />
@@ -831,11 +433,12 @@ function UsersTab() {
   );
 }
 
-function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, role, onMakeAdmin, onEdit, onBan, onDelete }: any) {
+function UserRow({ id, name, email, balance, totalBalance, rawBalance, profit, rawProfit, status, role, onMakeAdmin, onEdit, onEditProfit, onBan, onDelete }: any) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isProfitEditOpen, setIsProfitEditOpen] = useState(false);
   const [editBalance, setEditBalance] = useState(String(rawBalance));
+  const [editProfit, setEditProfit] = useState(String(rawProfit));
   const [plansOpen, setPlansOpen] = useState(false);
-  const [userPlans, setUserPlans] = useState<any[]>([]);
   const [userSubs, setUserSubs] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
 
@@ -844,17 +447,16 @@ function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, r
   }, [rawBalance]);
 
   useEffect(() => {
+    setEditProfit(String(rawProfit));
+  }, [rawProfit]);
+
+  useEffect(() => {
     if (plansOpen) {
       const fetchPlans = async () => {
         setLoadingPlans(true);
-        // Fetch standard investments
-        const { data: p } = await supabase.from('investments').select('*, investment_plans(name)').eq('user_id', id).order('created_at', { ascending: false });
-        setUserPlans(p || []);
-        
         // Fetch copy trading subscriptions
         const { data: s } = await supabase.from('copy_trading_subscriptions').select('*, master_traders(name)').eq('user_id', id).order('created_at', { ascending: false });
         setUserSubs(s || []);
-        
         setLoadingPlans(false);
       };
       fetchPlans();
@@ -866,17 +468,9 @@ function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, r
     setIsEditOpen(false);
   };
 
-  const handleWithdrawPlan = async (plan: any) => {
-    if (plan.status !== 'active') return;
-    await supabase.from('investments').update({ status: 'completed' }).eq('id', plan.id);
-    const { data: profile } = await supabase.from('profiles').select('balance').eq('id', id).single();
-    if (profile) {
-      const newBal = Number(profile.balance || 0) + Number(plan.amount);
-      await supabase.from('profiles').update({ balance: newBal }).eq('id', id);
-      onEdit(newBal); // Optimistic UI update in parent table
-    }
-    // Refresh modal lists
-    setUserPlans(userPlans.map(p => p.id === plan.id ? { ...p, status: 'completed' } : p));
+  const submitProfitEdit = () => {
+    onEditProfit(Number(editProfit));
+    setIsProfitEditOpen(false);
   };
 
   const handleWithdrawSub = async (sub: any) => {
@@ -900,6 +494,7 @@ function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, r
       <td className="p-3 sm:p-4 text-[13px] font-mono whitespace-nowrap">
         <div className="text-white font-semibold">{totalBalance}</div>
         <div className="text-[10px] text-gray-500 mt-0.5" title="Base Wallet Balance">Wallet: {balance}</div>
+        <div className="text-[10px] text-purple-400 mt-0.5" title="Manual Profit">Profit: {profit}</div>
       </td>
       <td className="p-3 sm:p-4">
         <span className={`px-2 py-1 rounded-sm text-[10px] uppercase tracking-widest font-bold whitespace-nowrap ${role === 'admin' ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>
@@ -937,44 +532,21 @@ function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, r
         {/* View Plans Modal */}
         <Dialog open={plansOpen} onOpenChange={setPlansOpen}>
           <DialogTrigger asChild>
-            <button className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-sm transition-colors" title="View User Plans"><TrendingUp className="w-4 h-4" /></button>
+            <button className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-sm transition-colors" title="View Copy Trading"><TrendingUp className="w-4 h-4" /></button>
           </DialogTrigger>
           <DialogContent className="bg-[#0a0f1c] border border-white/10 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Investments & Copy Trading for {name}</DialogTitle>
-              <DialogDescription className="text-gray-400">View active plans and force withdrawals.</DialogDescription>
+              <DialogTitle>Copy Trading for {name}</DialogTitle>
+              <DialogDescription className="text-gray-400">View active copy trading subscriptions and force withdrawals.</DialogDescription>
             </DialogHeader>
             <div className="py-2">
               {loadingPlans ? (
-                <div className="text-center py-8 text-gray-500">Loading plans...</div>
+                <div className="text-center py-8 text-gray-500">Loading subscriptions...</div>
               ) : (
                 <div className="space-y-6">
-                  {/* Standard Plans */}
-                  <div>
-                    <h3 className="text-[12px] font-bold text-white uppercase tracking-widest mb-3">Investment Plans</h3>
-                    {userPlans.length === 0 ? <p className="text-gray-500 text-sm">No standard investments.</p> : (
-                      <div className="space-y-2">
-                        {userPlans.map(p => (
-                          <div key={p.id} className="flex items-center justify-between bg-[#070b14] border border-white/5 p-3 rounded-sm">
-                            <div>
-                              <div className="text-sm font-semibold text-white">{p.investment_plans?.name || 'Unknown Plan'}</div>
-                              <div className="text-xs text-gray-500 font-mono">${Number(p.amount).toLocaleString()}</div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-sm ${p.status === 'active' ? 'bg-[#00d4aa]/10 text-[#00d4aa]' : 'bg-gray-500/10 text-gray-400'}`}>{p.status}</span>
-                              {p.status === 'active' && (
-                                <button onClick={() => handleWithdrawPlan(p)} className="px-3 py-1 bg-red-500/10 text-red-400 text-xs rounded-sm hover:bg-red-500/20 font-bold uppercase tracking-widest">Withdraw</button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
                   {/* Copy Trading */}
                   <div>
-                    <h3 className="text-[12px] font-bold text-white uppercase tracking-widest mb-3">Copy Trading</h3>
+                    <h3 className="text-[12px] font-bold text-white uppercase tracking-widest mb-3">Copy Trading Subscriptions</h3>
                     {userSubs.length === 0 ? <p className="text-gray-500 text-sm">No copy trading subscriptions.</p> : (
                       <div className="space-y-2">
                         {userSubs.map(s => (
@@ -1017,6 +589,29 @@ function UserRow({ id, name, email, balance, totalBalance, rawBalance, status, r
                 <button className="px-6 py-2 bg-transparent text-white hover:bg-white/5 rounded-sm">Cancel</button>
               </DialogClose>
               <button onClick={submitEdit} className="px-6 py-2 bg-[#c9a84c] text-[#070b14] font-bold rounded-sm hover:bg-[#b89945] transition-colors">
+                Save
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isProfitEditOpen} onOpenChange={setIsProfitEditOpen}>
+          <DialogTrigger asChild>
+            <button className="p-2 bg-white/5 hover:bg-white/10 text-purple-400 rounded-sm transition-colors" title="Edit Profit"><TrendingUp className="w-4 h-4" /></button>
+          </DialogTrigger>
+          <DialogContent className="bg-[#0a0f1c] border border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle>Edit Profit for {name}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2 block">New Profit Amount</label>
+              <input type="number" value={editProfit} onChange={e => setEditProfit(e.target.value)} className="w-full bg-[#070b14] border border-white/10 p-3 rounded-sm text-sm focus:outline-none focus:border-[#c9a84c]/50 text-white font-mono" />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <button className="px-6 py-2 bg-transparent text-white hover:bg-white/5 rounded-sm">Cancel</button>
+              </DialogClose>
+              <button onClick={submitProfitEdit} className="px-6 py-2 bg-[#c9a84c] text-[#070b14] font-bold rounded-sm hover:bg-[#b89945] transition-colors">
                 Save
               </button>
             </DialogFooter>
@@ -1114,6 +709,25 @@ function TransactionCard({ tx }: { tx: any }) {
     }
   };
 
+  // Helper: fire a background email notification to the user
+  const sendEmailToUser = async (type: string, amount: number, extraData: any = {}) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('email', tx.userEmail)
+        .single();
+      
+      await sendNotificationEmail(tx.userEmail, type, {
+        amount,
+        full_name: profile?.name || '',
+        ...extraData
+      });
+    } catch (err) {
+      console.error('[Admin Email Notification]', err);
+    }
+  };
+
   const handleApprove = async () => {
     const amt = `$${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${tx.asset || ''}`;
     if (tx.type === 'deposit') {
@@ -1123,6 +737,7 @@ function TransactionCard({ tx }: { tx: any }) {
         `Your deposit of ${amt} has been credited to your account.`,
         'deposit-approved'
       );
+      sendEmailToUser('deposit-approved', tx.amount);
     } else {
       if (sentTxid) {
         await supabase.from('transactions').update({ txid: sentTxid }).eq('id', tx.id);
@@ -1133,6 +748,7 @@ function TransactionCard({ tx }: { tx: any }) {
         `Your withdrawal of ${amt} has been processed and sent.`,
         'withdrawal-approved'
       );
+      sendEmailToUser('withdrawal-approved', tx.amount);
     }
     setIsApproveOpen(false);
   };
@@ -1145,6 +761,7 @@ function TransactionCard({ tx }: { tx: any }) {
       `Your ${tx.type} of ${amt} was not approved. Please contact support.`,
       `${tx.type}-rejected`
     );
+    sendEmailToUser(`${tx.type}-rejected`, tx.amount);
   };
 
   const handleCopy = (text: string) => {
@@ -1346,7 +963,7 @@ function TransactionCard({ tx }: { tx: any }) {
 }
 
 function WalletsTab() {
-  const { cryptos, addCrypto } = useCryptoStore();
+  const { cryptos, addCrypto, toggleActive, removeCrypto, updateAddress } = useCryptoStore();
   const [isOpen, setIsOpen] = useState(false);
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
@@ -1356,7 +973,6 @@ function WalletsTab() {
   const handleAdd = () => {
     if (!symbol || !name || !network || !address) return;
     addCrypto({
-      id: symbol.toLowerCase(),
       name,
       symbol: symbol.toUpperCase(),
       color: '#c9a84c',
@@ -1417,15 +1033,30 @@ function WalletsTab() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cryptos.map(crypto => (
-          <WalletCard key={crypto.id} crypto={crypto} />
+          <WalletCard 
+            key={crypto.id} 
+            crypto={crypto} 
+            toggleActive={toggleActive}
+            removeCrypto={removeCrypto}
+            updateAddress={updateAddress}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function WalletCard({ crypto }: { crypto: any }) {
-  const { toggleActive, removeCrypto, updateAddress } = useCryptoStore();
+function WalletCard({ 
+  crypto, 
+  toggleActive, 
+  removeCrypto, 
+  updateAddress 
+}: { 
+  crypto: any; 
+  toggleActive: (id: string) => Promise<void>; 
+  removeCrypto: (id: string) => Promise<void>; 
+  updateAddress: (id: string, address: string) => Promise<void>; 
+}) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editAddress, setEditAddress] = useState(crypto.address || '');
 
@@ -1438,7 +1069,6 @@ function WalletCard({ crypto }: { crypto: any }) {
 
   return (
     <div className={`bg-[#0a0f1c] border ${crypto.active ? 'border-white/20' : 'border-white/5'} p-6 rounded-sm relative overflow-hidden group`}>
-      {!crypto.active && <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center backdrop-blur-[1px] pointer-events-none"><span className="text-[11px] font-bold tracking-widest uppercase bg-black px-3 py-1 rounded-sm border border-white/10 text-gray-400">Inactive</span></div>}
       
       <div className="flex justify-between items-start mb-6 relative z-20">
         <div className="flex items-center gap-3">
@@ -1446,7 +1076,12 @@ function WalletCard({ crypto }: { crypto: any }) {
             {crypto.symbol.substring(0,1)}
           </div>
           <div>
-            <h3 className="text-lg text-white font-['Outfit'] leading-none mb-1">{crypto.name} <span className="text-sm text-gray-500">({crypto.symbol})</span></h3>
+            <h3 className="text-lg text-white font-['Outfit'] leading-none mb-1.5 flex items-center gap-2">
+              {crypto.name} <span className="text-sm text-gray-500">({crypto.symbol})</span>
+              <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-widest ${crypto.active ? 'bg-[#00d4aa]/10 text-[#00d4aa] border border-[#00d4aa]/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'}`}>
+                {crypto.active ? 'Active' : 'Inactive'}
+              </span>
+            </h3>
             <div className="text-[11px] text-gray-500 uppercase tracking-widest">{crypto.network}</div>
           </div>
         </div>
@@ -2206,5 +1841,365 @@ function TraderCard({ trader, onEdit, onDelete, onToggle, onSimulate, onFollower
         </AlertDialog>
       </div>
     </div>
+  );
+}
+
+function KYCDocumentViewer({ url, label, onClose }: { url: string; label: string; onClose: () => void }) {
+  const [zoom, setZoom] = React.useState(1);
+  const [dragging, setDragging] = React.useState(false);
+  const [pos, setPos] = React.useState({ x: 0, y: 0 });
+  const [start, setStart] = React.useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    setStart({ x: e.clientX - pos.x, y: e.clientY - pos.y });
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    setPos({ x: e.clientX - start.x, y: e.clientY - start.y });
+  };
+  const handleMouseUp = () => setDragging(false);
+  const resetView = () => { setZoom(1); setPos({ x: 0, y: 0 }); };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-sm flex flex-col" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-[#c9a84c]" />
+          <span className="text-white font-['Outfit'] font-semibold">{label}</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded-sm">Document Inspector</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Zoom controls */}
+          <span className="text-[12px] text-gray-400 mr-2">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.25))} className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-white rounded-sm border border-white/10 text-lg font-bold transition-colors">−</button>
+          <button onClick={resetView} className="px-3 h-8 bg-white/5 hover:bg-white/10 text-gray-400 rounded-sm border border-white/10 text-[10px] uppercase tracking-widest font-bold transition-colors">Reset</button>
+          <button onClick={() => setZoom(z => Math.min(4, z + 0.25))} className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-white rounded-sm border border-white/10 text-lg font-bold transition-colors">+</button>
+          <a href={url} download target="_blank" rel="noopener noreferrer" className="ml-2 px-4 h-8 flex items-center bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-sm border border-white/10 text-[10px] uppercase tracking-widest font-bold transition-colors gap-1.5">
+            <Eye className="w-3.5 h-3.5" /> Open Original
+          </a>
+          <button onClick={onClose} className="ml-2 w-8 h-8 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-sm border border-red-500/20 transition-colors">
+            <XIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas */}
+      <div className="flex-1 overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing" onMouseDown={handleMouseDown}>
+        <img
+          src={url}
+          alt={label}
+          draggable={false}
+          style={{
+            transform: `scale(${zoom}) translate(${pos.x / zoom}px, ${pos.y / zoom}px)`,
+            transition: dragging ? 'none' : 'transform 0.15s ease',
+            maxWidth: 'none',
+            userSelect: 'none',
+          }}
+          className="max-h-[80vh] rounded-sm shadow-2xl"
+          onError={e => (e.currentTarget.src = '')}
+        />
+      </div>
+
+      {/* Bottom zoom hint */}
+      <div className="text-center py-3 text-[10px] text-gray-600 uppercase tracking-widest border-t border-white/5">
+        Click and drag to pan · Use + / − to zoom · Scroll to zoom
+      </div>
+    </div>
+  );
+}
+
+function KYCInspectModal({ user, onClose, onApprove, onReject, processing }: {
+  user: any; onClose: () => void;
+  onApprove: () => void; onReject: (reason: string) => void; processing: boolean;
+}) {
+  const [viewerUrl, setViewerUrl] = React.useState<string | null>(null);
+  const [viewerLabel, setViewerLabel] = React.useState('');
+  const [rejectReason, setRejectReason] = React.useState('');
+  const [showReject, setShowReject] = React.useState(false);
+  const [checks, setChecks] = React.useState({ nameMatch: false, faceMatch: false, docClear: false, notExpired: false });
+
+  const allChecked = Object.values(checks).every(Boolean);
+  const docs = [
+    { url: user.kyc_document_front_url, label: 'Front of ID' },
+    { url: user.kyc_document_back_url, label: 'Back of ID' },
+    { url: user.kyc_selfie_url, label: 'Selfie with ID' },
+  ].filter(d => d.url);
+
+  return (
+    <>
+      {viewerUrl && (
+        <KYCDocumentViewer url={viewerUrl} label={viewerLabel} onClose={() => setViewerUrl(null)} />
+      )}
+
+      <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+        <div className="w-full max-w-5xl bg-[#0a0f1c] border border-white/10 rounded-sm shadow-2xl shadow-black/60 my-8">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-6 border-b border-white/5">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-xl text-white font-['Outfit'] font-semibold">KYC Document Inspection</h2>
+                <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-[#c9a84c]/20 text-[#c9a84c] border border-[#c9a84c]/30">Under Review</span>
+              </div>
+              <p className="text-[12px] text-gray-500">{user.email} · {user.kyc_full_name} · {user.kyc_country} · <span className="capitalize">{user.kyc_document_type?.replace('_', ' ')}</span></p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 text-gray-400 rounded-sm transition-colors">
+              <XIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Documents Side-by-Side */}
+          <div className="p-6 border-b border-white/5">
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mb-4">Submitted Documents — Click any image to inspect full resolution</div>
+            <div className={`grid gap-4 ${docs.length === 3 ? 'grid-cols-3' : docs.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {docs.map(doc => (
+                <div key={doc.label} className="group">
+                  <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-semibold flex items-center gap-2">
+                    {doc.label}
+                    <span className="text-[9px] text-gray-700 group-hover:text-[#c9a84c] transition-colors">Click to inspect</span>
+                  </div>
+                  <div
+                    onClick={() => { setViewerUrl(doc.url); setViewerLabel(doc.label); }}
+                    className="cursor-zoom-in relative rounded-sm overflow-hidden border border-white/10 group-hover:border-[#c9a84c]/40 transition-colors"
+                  >
+                    <img
+                      src={doc.url}
+                      alt={doc.label}
+                      className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={e => { e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-52 flex items-center justify-center text-gray-600 text-xs bg-white/5">Unable to load image</div>'; }}
+                    />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-3 py-1.5 rounded-sm flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-[#c9a84c]" />
+                        <span className="text-[10px] text-white uppercase tracking-widest font-bold">Full View</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Admin Cross-Check Checklist */}
+          <div className="p-6 border-b border-white/5">
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mb-4">Cross-Check Verification — All items must be checked before approving</div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                { key: 'nameMatch', label: 'Name on document matches submitted name', detail: `Submitted: ${user.kyc_full_name}` },
+                { key: 'faceMatch', label: 'Face in selfie matches face on document', detail: 'Verify facial features match clearly' },
+                { key: 'docClear', label: 'Document image is clear and unobstructed', detail: 'No blur, glare, or cropping issues' },
+                { key: 'notExpired', label: 'Document appears valid and not expired', detail: 'Check expiry date if visible' },
+              ].map(item => (
+                <label key={item.key} className={`flex items-start gap-3 p-4 rounded-sm border cursor-pointer transition-all ${checks[item.key as keyof typeof checks] ? 'border-[#00d4aa]/30 bg-[#00d4aa]/5' : 'border-white/5 hover:border-white/10 bg-[#070b14]'}`}>
+                  <div className={`w-5 h-5 rounded-sm border-2 shrink-0 mt-0.5 flex items-center justify-center transition-all ${checks[item.key as keyof typeof checks] ? 'border-[#00d4aa] bg-[#00d4aa]' : 'border-white/20'}`}
+                    onClick={() => setChecks(c => ({ ...c, [item.key]: !c[item.key as keyof typeof checks] }))}
+                  >
+                    {checks[item.key as keyof typeof checks] && <svg className="w-3 h-3 text-[#070b14]" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <div>
+                    <div className="text-[13px] text-white font-medium leading-snug">{item.label}</div>
+                    <div className="text-[11px] text-gray-500 mt-0.5">{item.detail}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="p-6 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="text-[12px] text-gray-500">
+              {allChecked
+                ? <span className="text-[#00d4aa] font-semibold">✓ All checks passed — ready to approve or reject</span>
+                : <span>Complete all {Object.values(checks).filter(Boolean).length}/4 checklist items before taking action</span>
+              }
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <button
+                onClick={() => setShowReject(r => !r)}
+                disabled={processing}
+                className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-sm text-[11px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
+              >
+                ✕ Reject
+              </button>
+              <button
+                disabled={!allChecked || processing}
+                onClick={onApprove}
+                className="px-6 py-3 bg-[#00d4aa] hover:bg-[#00b38f] text-[#070b14] rounded-sm text-[11px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {processing ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Processing...</> : '✓ Approve Identity'}
+              </button>
+            </div>
+          </div>
+
+          {/* Reject Input */}
+          {showReject && (
+            <div className="px-6 pb-6 border-t border-white/5 pt-5">
+              <label className="text-[11px] text-gray-400 uppercase tracking-widest mb-2 block font-semibold">Rejection Reason <span className="text-red-400">*</span> <span className="text-gray-600 normal-case tracking-normal">(this will be shown to the user)</span></label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  placeholder="e.g. Document image is too blurry to verify identity"
+                  className="flex-1 bg-[#070b14] border border-red-500/30 text-white p-3 rounded-sm focus:outline-none focus:border-red-500/60 text-sm"
+                />
+                <button
+                  onClick={() => { if (rejectReason.trim()) onReject(rejectReason.trim()); }}
+                  disabled={!rejectReason.trim() || processing}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-sm text-[11px] uppercase tracking-widest font-bold transition-colors disabled:opacity-50"
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function KYCTab() {
+  const [submissions, setSubmissions] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [processingId, setProcessingId] = React.useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = React.useState<'pending' | 'verified' | 'rejected'>('pending');
+  const [inspecting, setInspecting] = React.useState<any | null>(null);
+
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, email, kyc_status, kyc_full_name, kyc_country, kyc_document_type, kyc_document_front_url, kyc_document_back_url, kyc_selfie_url, kyc_submitted_at, kyc_rejection_reason')
+      .eq('kyc_status', filterStatus)
+      .order('kyc_submitted_at', { ascending: false });
+    setSubmissions(data || []);
+    setLoading(false);
+  };
+
+  React.useEffect(() => { fetchSubmissions(); }, [filterStatus]);
+
+  const handleApprove = async (userId: string) => {
+    setProcessingId(userId);
+    await supabase.from('profiles').update({ kyc_status: 'verified' }).eq('id', userId);
+    setProcessingId(null);
+    setInspecting(null);
+    fetchSubmissions();
+  };
+
+  const handleReject = async (userId: string, reason: string) => {
+    setProcessingId(userId);
+    await supabase.from('profiles').update({ kyc_status: 'rejected', kyc_rejection_reason: reason }).eq('id', userId);
+    setProcessingId(null);
+    setInspecting(null);
+    fetchSubmissions();
+  };
+
+  return (
+    <>
+      {inspecting && (
+        <KYCInspectModal
+          user={inspecting}
+          onClose={() => setInspecting(null)}
+          onApprove={() => handleApprove(inspecting.id)}
+          onReject={(reason) => handleReject(inspecting.id, reason)}
+          processing={processingId === inspecting?.id}
+        />
+      )}
+
+      <div className="animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl text-white font-light font-['Outfit']">KYC Review</h1>
+            <p className="text-[13px] text-gray-500 mt-1">Inspect, cross-check and verify user identity submissions</p>
+          </div>
+          <div className="flex gap-2">
+            {(['pending', 'verified', 'rejected'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={`px-4 py-2 text-[11px] uppercase tracking-widest font-bold rounded-sm border transition-all ${
+                  filterStatus === s
+                    ? s === 'pending' ? 'border-[#c9a84c]/60 bg-[#c9a84c]/10 text-[#c9a84c]'
+                      : s === 'verified' ? 'border-[#00d4aa]/60 bg-[#00d4aa]/10 text-[#00d4aa]'
+                      : 'border-red-500/60 bg-red-500/10 text-red-400'
+                    : 'border-white/10 text-gray-500 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-20 text-gray-500 text-[13px] uppercase tracking-widest">Loading submissions...</div>
+        ) : submissions.length === 0 ? (
+          <div className="text-center py-20 border border-dashed border-white/5 rounded-sm">
+            <ShieldCheck className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+            <div className="text-gray-500 text-[13px]">No {filterStatus} KYC submissions.</div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {submissions.map(user => (
+              <div key={user.id} className="bg-[#0a0f1c] border border-white/5 hover:border-white/10 rounded-sm overflow-hidden transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
+                  {/* User info */}
+                  <div className="flex items-start gap-4">
+                    {/* Avatar initials */}
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-sm font-bold text-purple-300 uppercase">
+                      {(user.kyc_full_name || user.email || '?').split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-white font-semibold font-['Outfit']">{user.kyc_full_name || '—'}</span>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm ${
+                          user.kyc_status === 'pending' ? 'bg-[#c9a84c]/20 text-[#c9a84c] border border-[#c9a84c]/30'
+                          : user.kyc_status === 'verified' ? 'bg-[#00d4aa]/20 text-[#00d4aa] border border-[#00d4aa]/30'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }`}>{user.kyc_status}</span>
+                      </div>
+                      <div className="text-[12px] text-gray-500">{user.email}</div>
+                      <div className="text-[11px] text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+                        <span>{user.kyc_country}</span>
+                        <span className="text-gray-700">·</span>
+                        <span className="capitalize">{user.kyc_document_type?.replace('_', ' ')}</span>
+                        {user.kyc_submitted_at && (
+                          <><span className="text-gray-700">·</span><span>{new Date(user.kyc_submitted_at).toLocaleDateString()}</span></>
+                        )}
+                      </div>
+                      {user.kyc_rejection_reason && (
+                        <div className="text-[11px] text-red-400/70 mt-1">Rejection: {user.kyc_rejection_reason}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Document thumbnails + inspect button */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Mini thumbnail strip */}
+                    <div className="flex gap-2">
+                      {[user.kyc_document_front_url, user.kyc_document_back_url, user.kyc_selfie_url].filter(Boolean).map((url, i) => (
+                        <div key={i} className="w-12 h-12 rounded-sm overflow-hidden border border-white/10">
+                          <img src={url} alt="" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setInspecting(user)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#c9a84c]/10 hover:bg-[#c9a84c]/20 text-[#c9a84c] border border-[#c9a84c]/30 rounded-sm text-[11px] uppercase tracking-widest font-bold transition-all hover:shadow-lg hover:shadow-[#c9a84c]/10"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Inspect Docs
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

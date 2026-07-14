@@ -41,10 +41,21 @@ export function useCryptoStore() {
     }
   };
 
-  const addCrypto = async (crypto: CryptoAsset) => {
+  const addCrypto = async (crypto: Omit<CryptoAsset, 'id'> & { id?: string }) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const finalId = (crypto.id && uuidRegex.test(crypto.id)) 
+      ? crypto.id 
+      : (typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }));
+
+    const newCrypto: CryptoAsset = { ...crypto, id: finalId };
+
     // Optimistic update
-    setCryptos(prev => [...prev, crypto]);
-    const { error } = await supabase.from('crypto_assets').insert([crypto]);
+    setCryptos(prev => [...prev, newCrypto]);
+    const { error } = await supabase.from('crypto_assets').insert([newCrypto]);
     if (error) {
       console.error('Error adding crypto:', error);
       fetchCryptos();
