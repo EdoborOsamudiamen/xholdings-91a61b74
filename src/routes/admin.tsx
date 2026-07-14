@@ -4,11 +4,13 @@ import { supabase } from "../lib/supabase";
 import { 
   Users, DollarSign, Wallet, ShieldAlert, CheckCircle, XCircle, ShieldCheck,
   Trash2, Ban, Edit, Settings, Activity, Search, Power, Clock,
-  TrendingUp, Plus, ImageIcon, ToggleLeft, ToggleRight, Eye, X as XIcon, Menu, Copy, Sliders
+  TrendingUp, Plus, ImageIcon, ToggleLeft, ToggleRight, Eye, X as XIcon, Menu, Copy, Sliders,
+  Mail
 } from "lucide-react";
 import { useCryptoStore } from "../lib/crypto-store";
 import { useTransactionStore } from "../lib/transaction-store";
 import BalanceOpsTab from "../components/admin/BalanceOpsTab";
+import EmailsTab from "../components/admin/EmailsTab";
 import { sendNotificationEmail } from "../lib/send-email";
 import {
   AlertDialog,
@@ -112,6 +114,7 @@ function AdminDashboard() {
           <TabButton active={activeTab === 'copy_trading'} onClick={() => {setActiveTab('copy_trading'); setIsMobileMenuOpen(false);}} icon={Copy} label="Copy Trading" />
           <TabButton active={activeTab === 'kyc'} onClick={() => {setActiveTab('kyc'); setIsMobileMenuOpen(false);}} icon={ShieldCheck} label="KYC Review" />
           <TabButton active={activeTab === 'security'} onClick={() => {setActiveTab('security'); setIsMobileMenuOpen(false);}} icon={ShieldAlert} label="Security logs" />
+          <TabButton active={activeTab === 'emails'} onClick={() => {setActiveTab('emails'); setIsMobileMenuOpen(false);}} icon={Mail} label="Send Emails" />
         </div>
         <div className="mt-auto border-t border-white/5 pt-6">
           <div className="flex items-center justify-between">
@@ -139,6 +142,7 @@ function AdminDashboard() {
         {activeTab === 'copy_trading' && <CopyTradingTab />}
         {activeTab === 'kyc' && <KYCTab />}
         {activeTab === 'security' && <SecurityTab />}
+        {activeTab === 'emails' && <EmailsTab />}
       </main>
     </div>
   );

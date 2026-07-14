@@ -49,6 +49,7 @@ function Register() {
       email,
       password,
       options: {
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined,
         data: {
           name,
         }

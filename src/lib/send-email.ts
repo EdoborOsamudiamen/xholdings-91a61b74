@@ -1,7 +1,9 @@
 import { supabase } from './supabase';
+import { sendEmailServerFn } from './api/email.functions';
 
 /**
- * Sends a branded notification email via the `send-notification-email` edge function.
+ * Sends a branded notification email via the server function (`sendEmailServerFn`)
+ * or falls back to the client-side `send-notification-email` edge function.
  *
  * @param to       Recipient email address
  * @param type     Email template key (e.g. 'deposit-approved', 'kyc-rejected', 'balance-credited')
@@ -14,9 +16,22 @@ export async function sendNotificationEmail(
 ): Promise<void> {
   if (!to) return;
   try {
-    await supabase.functions.invoke('send-notification-email', {
+    const serverRes = await sendEmailServerFn({ data: { to, type, data } });
+    if (serverRes?.ok) {
+      return;
+    }
+    console.warn('[sendNotificationEmail] Server fn returned error, attempting fallback:', serverRes?.error);
+  } catch (err) {
+    console.warn('[sendNotificationEmail] Server fn call failed, falling back to client invocation:', err);
+  }
+
+  try {
+    const { error } = await supabase.functions.invoke('send-notification-email', {
       body: { to, type, data },
     });
+    if (error) {
+      console.error('[sendNotificationEmail] Edge function error:', error);
+    }
   } catch (err) {
     // Non-fatal — log and continue; the UI action already succeeded
     console.error('[sendNotificationEmail]', err);
