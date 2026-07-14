@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import process from "node:process";
 import { supabase } from "../supabase";
 
 const BRAND_NAME = 'TheSpaceHoldings';
@@ -103,8 +102,8 @@ export const sendEmailServerFn = createServerFn({ method: "POST" })
       return { ok: false, error: "Missing to or type" };
     }
 
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@thespaceholdings.com";
+    const RESEND_API_KEY = typeof process !== "undefined" ? process.env?.RESEND_API_KEY : undefined;
+    const FROM_EMAIL = (typeof process !== "undefined" ? process.env?.FROM_EMAIL : undefined) || "noreply@thespaceholdings.com";
 
     // 1. Try sending directly via Resend if RESEND_API_KEY is configured in Vercel backend
     if (RESEND_API_KEY) {
