@@ -97,6 +97,9 @@ function Dashboard() {
   }, [navigate]);
 
   const { transactions } = useTransactionStore();
+  // Filter transactions to only those belonging to the logged-in user
+  const userTransactions = transactions.filter(t => t.userId === profile?.id);
+
   // Track previous statuses so we only fire once per change
   const prevStatuses = useRef<Record<string, string>>({});
   // Whether we have seeded the initial snapshot (prevents firing on first load)
@@ -111,11 +114,11 @@ function Dashboard() {
 
   // Watch for transaction status changes and fire browser notifications
   useEffect(() => {
-    if (transactions.length === 0) return;
+    if (userTransactions.length === 0) return;
 
     if (!isSeeded.current) {
       // First time: just snapshot current statuses, don't fire anything
-      transactions.forEach(tx => {
+      userTransactions.forEach(tx => {
         prevStatuses.current[tx.id] = tx.status;
       });
       isSeeded.current = true;
@@ -123,7 +126,7 @@ function Dashboard() {
     }
 
     // Subsequent updates: detect genuine changes and notify
-    transactions.forEach(tx => {
+    userTransactions.forEach(tx => {
       const prev = prevStatuses.current[tx.id];
       const curr = tx.status;
       if (prev !== undefined && prev !== curr) {
@@ -139,10 +142,7 @@ function Dashboard() {
       }
       prevStatuses.current[tx.id] = curr;
     });
-  }, [transactions]);
-
-  // Filter transactions to only those belonging to the logged-in user
-  const userTransactions = transactions.filter(t => t.userId === profile?.id);
+  }, [userTransactions]);
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
@@ -526,13 +526,32 @@ function CopyTradeTab({ profile }: { profile?: any }) {
 function HomeTab({ setActiveTab, profile }: { setActiveTab: (tab: string) => void, profile?: any }) {
   const { transactions } = useTransactionStore();
   const { investments } = useInvestmentStore();
-  const userTransactions = [...transactions].sort((a,b) => b.timestamp - a.timestamp).slice(0, 5);
+  const [activeCopyTradingPrincipal, setActiveCopyTradingPrincipal] = useState(0);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    const fetchCopyTrading = async () => {
+      const { data } = await supabase
+        .from('copy_trading_subscriptions')
+        .select('amount')
+        .eq('user_id', profile.id)
+        .eq('status', 'active');
+      if (data) {
+        const sum = data.reduce((acc, sub) => acc + Number(sub.amount), 0);
+        setActiveCopyTradingPrincipal(sum);
+      }
+    };
+    fetchCopyTrading();
+  }, [profile?.id]);
+
+  const userTransactionsFull = transactions.filter(tx => tx.userId === profile?.id);
+  const userTransactions = [...userTransactionsFull].sort((a,b) => b.timestamp - a.timestamp).slice(0, 5);
   
-  const adminProfitSum = transactions
+  const adminProfitSum = userTransactionsFull
     .filter(tx => tx.asset === 'PROFIT' && tx.status === 'approved')
     .reduce((acc, tx) => acc + (tx.type === 'deposit' ? Number(tx.amount) : -Number(tx.amount)), 0);
 
-  const totalWithdrawn = transactions
+  const totalWithdrawn = userTransactionsFull
     .filter(tx => tx.type === 'withdrawal' && tx.status === 'approved')
     .reduce((acc, tx) => acc + Number(tx.amount), 0);
 
@@ -545,8 +564,8 @@ function HomeTab({ setActiveTab, profile }: { setActiveTab: (tab: string) => voi
     .filter((inv: any) => inv.status === 'active')
     .reduce((acc: number, inv: any) => acc + Number(inv.amount), 0);
 
-  const totalBalance = Number(profile?.balance || 0) + Number(profile?.profit || 0) + activeInvestedPrincipal + roiEarned + Number(profile?.total_earned_referrals || 0);
-  const displayWalletBalance = Number(profile?.balance || 0) - adminProfitSum;
+  const totalBalance = Number(profile?.balance || 0) + Number(profile?.profit || 0) + activeInvestedPrincipal + activeCopyTradingPrincipal + roiEarned + Number(profile?.total_earned_referrals || 0);
+  const displayWalletBalance = Number(profile?.balance || 0);
   const displayTradingProfits = Number(profile?.profit || 0) + adminProfitSum;
 
   const [marketData, setMarketData] = useState<any[]>([
@@ -736,7 +755,7 @@ function HomeTab({ setActiveTab, profile }: { setActiveTab: (tab: string) => voi
         </div>
 
         {/* ─── Financial Summary Strip ─── */}
-        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Referral Rewards Earned */}
           <div className="relative overflow-hidden bg-[#0a0f1c] border border-white/5 rounded-sm p-6 flex flex-col gap-4 group hover:border-[#c9a84c]/30 transition-all duration-300">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[#c9a84c]/8 rounded-full blur-2xl pointer-events-none" />
@@ -761,6 +780,34 @@ function HomeTab({ setActiveTab, profile }: { setActiveTab: (tab: string) => voi
                 className="w-full py-2 text-[11px] uppercase tracking-widest font-bold bg-white/5 hover:bg-white/10 text-gray-300 rounded-sm transition-colors flex items-center justify-center gap-2"
               >
                 <Gift className="w-3.5 h-3.5 text-[#c9a84c]" /> View Rewards Program
+              </button>
+            </div>
+          </div>
+
+          {/* Total Money Invested */}
+          <div className="relative overflow-hidden bg-[#0a0f1c] border border-white/5 rounded-sm p-6 flex flex-col gap-4 group hover:border-[#a855f7]/30 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#a855f7]/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <div className="w-10 h-10 rounded-sm bg-[#a855f7]/10 border border-[#a855f7]/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-[#a855f7]" />
+              </div>
+              <span className="text-[9px] text-[#a855f7] uppercase tracking-[0.2em] font-bold bg-[#a855f7]/10 px-2 py-1 rounded-full">
+                Active Assets
+              </span>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mb-1">Total Money Invested</div>
+              <div className="text-3xl text-white font-['Outfit'] font-light">
+                ${(activeInvestedPrincipal + activeCopyTradingPrincipal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] text-gray-500 mt-1">Direct investments + copy trading principal</div>
+            </div>
+            <div className="pt-3 border-t border-white/5">
+              <button
+                onClick={() => setActiveTab('invest')}
+                className="w-full py-2 text-[11px] uppercase tracking-widest font-bold bg-white/5 hover:bg-white/10 text-gray-300 rounded-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <TrendingUp className="w-3.5 h-3.5" /> Manage Investments
               </button>
             </div>
           </div>
@@ -929,6 +976,23 @@ const COINGECKO_IDS: Record<string, string> = {
 
 function WalletTab({ profile, settings }: { profile?: any, settings?: any }) {
   const [mode, setMode] = useState('deposit');
+  const [activeCopyTradingPrincipal, setActiveCopyTradingPrincipal] = useState(0);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    const fetchCopyTrading = async () => {
+      const { data } = await supabase
+        .from('copy_trading_subscriptions')
+        .select('amount')
+        .eq('user_id', profile.id)
+        .eq('status', 'active');
+      if (data) {
+        const sum = data.reduce((acc, sub) => acc + Number(sub.amount), 0);
+        setActiveCopyTradingPrincipal(sum);
+      }
+    };
+    fetchCopyTrading();
+  }, [profile?.id]);
   const [copied, setCopied] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState('btc');
   const [amount, setAmount] = useState('');
@@ -957,7 +1021,7 @@ function WalletTab({ profile, settings }: { profile?: any, settings?: any }) {
   const { cryptos } = useCryptoStore();
   const { investments } = useInvestmentStore();
   
-  const userTransactions = [...transactions].sort((a,b) => b.timestamp - a.timestamp);
+  const userTransactions = transactions.filter(t => t.userId === profile?.id).sort((a,b) => b.timestamp - a.timestamp);
   const selectedCryptoData = cryptos.find(c => c.symbol.toLowerCase() === selectedAsset.toLowerCase() || c.id === selectedAsset) || cryptos[0];
 
   // Fetch live prices from CoinGecko with Coinbase fallback
@@ -1020,7 +1084,7 @@ function WalletTab({ profile, settings }: { profile?: any, settings?: any }) {
     .filter((inv: any) => inv.status === 'active')
     .reduce((acc: number, inv: any) => acc + Number(inv.amount), 0);
 
-  const totalBalance = Number(profile?.balance || 0) + Number(profile?.profit || 0) + activeInvestedPrincipal + roiEarned + Number(profile?.total_earned_referrals || 0);
+  const totalBalance = Number(profile?.balance || 0) + Number(profile?.profit || 0) + activeInvestedPrincipal + activeCopyTradingPrincipal + roiEarned + Number(profile?.total_earned_referrals || 0);
 
   const handleCopy = (text: string) => {
     if (text) navigator.clipboard.writeText(text);
